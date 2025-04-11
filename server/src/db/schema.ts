@@ -7,4 +7,8 @@ export const usersTable = pgTable("users", {
   email: varchar({ length: 255 }).notNull().unique(),
 });
 
-
+export const quotesTable = pgTable("quotes", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  author: varchar({ length: 255 }).notNull(),
+  text: varchar({ length: 255 }).notNull(),
+});
