@@ -19,9 +19,26 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Terminal, Cpu, Code, ArrowRight } from "lucide-react";
+import {
+  AlertCircle,
+  Terminal,
+  Cpu,
+  Code,
+  ArrowRight,
+  Quote,
+} from "lucide-react";
+import { useInitiateScrap } from "@/hooks/scrap";
+import { useState, useEffect } from "react";
+
+interface Quote {
+  text: string;
+  author: string;
+}
 
 function Scraping() {
+  const scrapMutation = useInitiateScrap();
+  const [scrapingResults, setScrapingResults] = useState<Quote[] | null>(null);
+
   const formik = useFormik({
     initialValues: {
       siteUrl: "",
@@ -30,8 +47,16 @@ function Scraping() {
     },
     onSubmit: (values) => {
       console.log(values);
+      scrapMutation.mutate(values);
+      formik.resetForm();
     },
   });
+
+  useEffect(() => {
+    if (scrapMutation.data?.success && scrapMutation.data?.data?.quotes) {
+      setScrapingResults(scrapMutation.data.data.quotes);
+    }
+  }, [scrapMutation.data]);
 
   return (
     <div className="flex flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 min-h-screen">
@@ -149,8 +174,12 @@ function Scraping() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition-colors flex items-center justify-center"
+                disabled={scrapMutation.isPending}
               >
-                Start Scraping <ArrowRight className="ml-2 h-4 w-4" />
+                {scrapMutation.isPending ? "Processing..." : "Start Scraping"}
+                {!scrapMutation.isPending && (
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                )}
               </Button>
             </form>
           </CardContent>
@@ -192,19 +221,79 @@ function Scraping() {
                   Online
                 </Badge>
               </div>
+              {scrapMutation.isPending && (
+                <div className="mt-3 flex items-center justify-between text-sm bg-white p-3 rounded-md">
+                  <span className="text-gray-700">Request Status</span>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                    Processing
+                  </Badge>
+                </div>
+              )}
+              {scrapMutation.isError && (
+                <div className="mt-3 flex items-center justify-between text-sm bg-white p-3 rounded-md">
+                  <span className="text-gray-700">Request Status</span>
+                  <Badge className="bg-red-100 text-red-800 border-red-200">
+                    Error
+                  </Badge>
+                </div>
+              )}
+              {scrapMutation.isSuccess && (
+                <div className="mt-3 flex items-center justify-between text-sm bg-white p-3 rounded-md">
+                  <span className="text-gray-700">Request Status</span>
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    Success
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <div className="w-full  container mt-6 bg-white p-4 rounded-lg shadow-md border border-gray-200">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">
+      <div className="w-full container mt-6 bg-white p-4 rounded-lg shadow-md border border-gray-200">
+        <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
+          <Quote className="h-5 w-5 mr-2 text-blue-500" />
           Recent Scraping Results
         </h3>
-        <div className="bg-gray-100 rounded p-3 text-sm text-gray-500 italic">
-          No recent scraping results. Complete the form and click "Start
-          Scraping" to see results here.
-        </div>
+
+        {!scrapingResults || scrapingResults.length === 0 ? (
+          <div className="bg-gray-100 rounded p-3 text-sm text-gray-500 italic">
+            No recent scraping results. Complete the form and click "Start
+            Scraping" to see results here.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Badge className="bg-blue-100 text-blue-800">
+                {scrapingResults.length} quotes found
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setScrapingResults(null)}
+                className="text-xs"
+              >
+                Clear Results
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
+              {scrapingResults?.map((quote: Quote, index: number) => (
+                <Card
+                  key={index}
+                  className="border-l-4 border-l-blue-400 shadow-sm"
+                >
+                  <CardContent className="pt-4">
+                    <p className="text-gray-700 italic mb-2">{quote.text}</p>
+                    <p className="text-right text-sm text-gray-600">
+                      — {quote.author}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
