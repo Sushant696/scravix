@@ -28,6 +28,4 @@ const getProject = async () => {
   await browser.close();
 };
 
-
-
 export default getProject;
